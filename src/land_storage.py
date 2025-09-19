@@ -73,11 +73,11 @@ for index, cargo in cargo_df.iterrows():
 
 	if product in ['diesel','crude oil']:
 		# Load cargo from port
-		if load_time < target_time:
+		if (load_time < target_time) and (load in ports):
 			ports[load].load_cargo(product, quantity)
 		# Discharge cargo to port
-		if discharge_time < target_time:
+		if (discharge_time < target_time) and (discharge in ports):
 			ports[discharge].discharge_cargo(product, quantity)
 
 	print(ports)
-	time.sleep(3)
+	time.sleep(1)
