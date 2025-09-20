@@ -5,7 +5,7 @@ import csv
 
 # Classes
 class Port:
-	def __init__(self, name , diesel_abs, diesel_rel, crude_abs, crude_rel):
+	def __init__(self, name, diesel_abs = 0, diesel_rel = 1, crude_abs = 0, crude_rel = 1):
 		self.name = name
 		self.diesel_abs = diesel_abs
 		self.diesel_max = diesel_abs/diesel_rel
