@@ -4,7 +4,6 @@ import time
 import csv
 
 # Classes
-
 class Port:
 	def __init__(self, name , diesel_abs, diesel_rel, crude_abs, crude_rel):
 		self.name = name
@@ -50,6 +49,16 @@ class Port:
 def import_local_parquet(filename):
 	return pd.read_parquet(filename)
 
+def import_local_parquet_to_ports(filename):
+	storage_df = import_local_parquet("./data/storage_asof_20200101.parquet")
+
+	ports = {}
+	for index, storage in storage_df.iterrows():
+		port = Port(storage["port"], storage["diesel_absolute"], storage["diesel_relative"], storage["crude_absolute"], storage["crude_relative"])
+		ports[storage["port"]] = port
+
+	return ports
+
 
 # Processors
 def process_cargo_against_ports(cargos, ports, cargo_filter = False, timestamp = False):
@@ -81,8 +90,7 @@ def process_cargo_against_ports(cargos, ports, cargo_filter = False, timestamp =
 
 	return ports
 
-
-# Exports
+# Exportors
 def export_local_csv(ports, filename):
 	with open(filename, "w") as outputFile:
 		# Write headers
@@ -95,19 +103,12 @@ def export_local_csv(ports, filename):
 
 
 
-## Load storage data
-storage_df = import_local_parquet("./data/storage_asof_20200101.parquet")
-
-ports = {}
-for index, storage in storage_df.iterrows():
-	port = Port(storage["port"], storage["diesel_absolute"], storage["diesel_relative"], storage["crude_absolute"], storage["crude_relative"])
-	ports[storage["port"]] = port
-
-## Load cargo data
+## Load storage and cargo data
+ports = import_local_parquet_to_ports("./data/storage_asof_20200101.parquet")
 cargo_df = import_local_parquet("./data/cargo_movements.parquet")
 
-
+## Process cargo data against ports using cargo and time filters
 ports = process_cargo_against_ports(cargo_df, ports, ['crude oil', 'diesel'], "2020-01-14 00:00:00")
 
-## Export
+## Export to csv
 export_local_csv(ports, "output/ports.csv")
