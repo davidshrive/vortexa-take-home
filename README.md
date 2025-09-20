@@ -1,10 +1,5 @@
 # vortexa-take-home
 
-## Next Steps
-* Tests
-* Logging/Metrics?
-
-
 ## Running locally
 First ensure everything needed is installed
 `pip install -r requirements.txt`
