@@ -52,6 +52,34 @@ def import_local_parquet(filename):
 
 
 # Processors
+def process_cargo_against_ports(cargos, ports, cargo_filter = False, timestamp = False):
+
+	## Sort cargo data by timestamp
+	cargos = cargos.sort_values(by="start_timestamp")
+
+	## If timestamp arg provided create target time
+	if timestamp:
+		target_time = pd.to_datetime(timestamp)
+
+	## Procces all cargo and update each port if load/discharge event happens before target time
+	for index, cargo in cargos.iterrows():
+
+		load = cargo["loading_port"]
+		load_time = pd.to_datetime(cargo["start_timestamp"])
+		discharge = cargo["discharge_port"]
+		discharge_time = pd.to_datetime(cargo["end_timestamp"])
+		product = cargo["product"]
+		quantity = cargo["quantity"]
+
+		if product in cargo_filter:
+			# Load cargo from port
+			if (load_time < target_time) and (load in ports):
+				ports[load].load_cargo(product, quantity)
+			# Discharge cargo to port
+			if (discharge_time < target_time) and (discharge in ports):
+				ports[discharge].discharge_cargo(product, quantity)
+
+	return ports
 
 
 # Exports
@@ -66,6 +94,7 @@ def export_local_csv(ports, filename):
 			writer.writerow(port.csv_export())
 
 
+
 ## Load storage data
 storage_df = import_local_parquet("./data/storage_asof_20200101.parquet")
 
@@ -77,27 +106,8 @@ for index, storage in storage_df.iterrows():
 ## Load cargo data
 cargo_df = import_local_parquet("./data/cargo_movements.parquet")
 
-## Sort cargo data by timestamp
-cargo_df = cargo_df.sort_values(by="start_timestamp")
 
-target_time = pd.to_datetime("2020-01-14 00:00:00")
-## Procces all cargo and update each port if load/discharge event happens before target timestamp
-for index, cargo in cargo_df.iterrows():
-
-	load = cargo["loading_port"]
-	load_time = pd.to_datetime(cargo["start_timestamp"])
-	discharge = cargo["discharge_port"]
-	discharge_time = pd.to_datetime(cargo["end_timestamp"])
-	product = cargo["product"]
-	quantity = cargo["quantity"]
-
-	if product in ["diesel","crude oil"]:
-		# Load cargo from port
-		if (load_time < target_time) and (load in ports):
-			ports[load].load_cargo(product, quantity)
-		# Discharge cargo to port
-		if (discharge_time < target_time) and (discharge in ports):
-			ports[discharge].discharge_cargo(product, quantity)
+ports = process_cargo_against_ports(cargo_df, ports, ['crude oil', 'diesel'], "2020-01-14 00:00:00")
 
 ## Export
 export_local_csv(ports, "output/ports.csv")
