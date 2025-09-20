@@ -41,3 +41,30 @@ def test_port_discharge_cargo_direct():
     port = land_storage.Port("test-port", 20)
     port.discharge_cargo_diesel(10)
     assert(port.diesel_abs) == 30
+
+def test_process_cargo_no_filter():
+    cargo = land_storage.import_local_parquet("./tests/data/test_cargo.parquet")
+    ports = {}
+    ports['Yeosu'] = land_storage.Port("Yeosu")
+    ports['Houston'] = land_storage.Port("Houston", 200)
+    land_storage.process_cargo_against_ports(cargo, ports)
+    assert(ports['Yeosu'].diesel_abs) == 100
+    assert(ports['Houston'].diesel_abs) == 100
+
+def test_process_cargo_filter_cargo():
+    cargo = land_storage.import_local_parquet("./tests/data/test_cargo.parquet")
+    ports = {}
+    ports['Yeosu'] = land_storage.Port("Yeosu")
+    ports['Houston'] = land_storage.Port("Houston", 200)
+    land_storage.process_cargo_against_ports(cargo, ports, ['not-diesel'])
+    assert(ports['Yeosu'].diesel_abs) == 0
+    assert(ports['Houston'].diesel_abs) == 200
+
+def test_process_cargo_filter_time():
+    cargo = land_storage.import_local_parquet("./tests/data/test_cargo.parquet")
+    ports = {}
+    ports['Yeosu'] = land_storage.Port("Yeosu")
+    ports['Houston'] = land_storage.Port("Houston", 200)
+    land_storage.process_cargo_against_ports(cargo, ports, False, "2020-01-16 00:00:00")
+    assert(ports['Yeosu'].diesel_abs) == 0
+    assert(ports['Houston'].diesel_abs) == 100

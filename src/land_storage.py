@@ -69,6 +69,8 @@ def process_cargo_against_ports(cargos, ports, cargo_filter = False, timestamp =
 	## If timestamp arg provided create target time
 	if timestamp:
 		target_time = pd.to_datetime(timestamp)
+	else:
+		target_time = False
 
 	## Procces all cargo and update each port if load/discharge event happens before target time
 	for index, cargo in cargos.iterrows():
@@ -80,12 +82,12 @@ def process_cargo_against_ports(cargos, ports, cargo_filter = False, timestamp =
 		product = cargo["product"]
 		quantity = cargo["quantity"]
 
-		if product in cargo_filter:
+		if (not cargo_filter) or (product in cargo_filter):
 			# Load cargo from port
-			if (load_time < target_time) and (load in ports):
+			if ((not target_time) or load_time < target_time) and (load in ports):
 				ports[load].load_cargo(product, quantity)
 			# Discharge cargo to port
-			if (discharge_time < target_time) and (discharge in ports):
+			if ((not target_time) or discharge_time < target_time) and (discharge in ports):
 				ports[discharge].discharge_cargo(product, quantity)
 
 	return ports
