@@ -3,6 +3,8 @@ import pandas as pd
 import time
 import csv
 
+# Classes
+
 class Port:
 	def __init__(self, name , diesel_abs, diesel_rel, crude_abs, crude_rel):
 		self.name = name
@@ -22,11 +24,9 @@ class Port:
 
 	def load_cargo_diesel(self, cargo_amount):
 		self.diesel_abs = self.diesel_abs - cargo_amount
-		# Add check for max amount
 
 	def load_cargo_crude(self, cargo_amount):
 		self.crude_abs = self.crude_abs - cargo_amount
-		# Add check for max amount
 
 	def discharge_cargo(self, cargo_type, cargo_amount):
 		if cargo_type == "diesel":
@@ -36,11 +36,9 @@ class Port:
 
 	def discharge_cargo_diesel(self, cargo_amount):
 		self.diesel_abs = self.diesel_abs + cargo_amount
-		# Add check for max amount
 
 	def discharge_cargo_crude(self, cargo_amount):
 		self.crude_abs = self.crude_abs + cargo_amount
-		# Add check for max amount
 
 	def csv_headers(self):
 		return ["port","diesel","crude"]
@@ -48,9 +46,28 @@ class Port:
 	def csv_export(self):
 		return {"port": self.name, "diesel": self.diesel_abs, "crude": self.crude_abs}
 
+# Importers
+def import_local_parquet(filename):
+	return pd.read_parquet(filename)
+
+
+# Processors
+
+
+# Exports
+def export_local_csv(ports, filename):
+	with open(filename, "w") as outputFile:
+		# Write headers
+		writer = csv.DictWriter(outputFile, ports[list(ports.keys())[0]].csv_headers())
+		writer.writeheader()
+
+		# Write data
+		for port in ports.values():
+			writer.writerow(port.csv_export())
+
+
 ## Load storage data
-storage_file = "./data/storage_asof_20200101.parquet"
-storage_df = pd.read_parquet(storage_file)
+storage_df = import_local_parquet("./data/storage_asof_20200101.parquet")
 
 ports = {}
 for index, storage in storage_df.iterrows():
@@ -58,8 +75,7 @@ for index, storage in storage_df.iterrows():
 	ports[storage["port"]] = port
 
 ## Load cargo data
-cargo_file = "./data/cargo_movements.parquet"
-cargo_df = pd.read_parquet(cargo_file)
+cargo_df = import_local_parquet("./data/cargo_movements.parquet")
 
 ## Sort cargo data by timestamp
 cargo_df = cargo_df.sort_values(by="start_timestamp")
@@ -84,13 +100,4 @@ for index, cargo in cargo_df.iterrows():
 			ports[discharge].discharge_cargo(product, quantity)
 
 ## Export
-outputPath = "output/"
-outputFilename = outputPath+"ports.csv"
-with open(outputFilename, "w") as outputFile:
-	# Write headers
-	writer = csv.DictWriter(outputFile, ports["Houston"].csv_headers())
-	writer.writeheader()
-
-	# Write data
-	for port in ports.values():
-		writer.writerow(port.csv_export())
+export_local_csv(ports, "output/ports.csv")
